@@ -1,19 +1,30 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+import * as fs from 'fs'
+import {ActionInputs, getActionInputs} from './actionInputs'
+import {ActionOutputs, setActionOutputs} from './actionOutputs'
+import path from 'path'
 
-async function run(): Promise<void> {
+function myAction(actionInputs: ActionInputs): ActionOutputs {
+  const greeting_message = `Hello ${actionInputs.who_to_greet}!`
+  const greetings_file_path = path.resolve('./greetings.txt')
+  core.info('GREETINGS:')
+  core.info(greeting_message) // Equivalent to console.log
+  core.debug(`This is a debug message`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+  fs.writeFileSync(greetings_file_path, greeting_message)
+  const actionOutputs: ActionOutputs = {
+    greetings_file_path
+  }
+  return actionOutputs
+}
+
+async function main(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
-
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    core.setOutput('time', new Date().toTimeString())
+    const actionInputs: ActionInputs = getActionInputs()
+    const actionOutputs = myAction(actionInputs)
+    setActionOutputs(actionOutputs)
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
 }
 
-run()
+main()
